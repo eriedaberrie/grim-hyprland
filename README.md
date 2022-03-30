@@ -82,16 +82,15 @@ installation (in `/usr/local` by default), run `ninja -C build install`.
 
 ## Contributing
 
-Either [send GitHub pull requests][github] or [send patches on the mailing
-list][ml].
+Report bugs on the [issue tracker], send patches on the [mailing list].
 
-Join the IRC channel: #emersion on Libera Chat.
+Join the IRC channel: [#emersion on Libera Chat].
 
 ## License
 
 MIT
 
 [slurp]: https://github.com/emersion/slurp
-[sway]: https://github.com/swaywm/sway
-[github]: https://github.com/emersion/grim
-[ml]: https://lists.sr.ht/%7Eemersion/public-inbox
+[issue tracker]: https://todo.sr.ht/~emersion/grim
+[mailing list]: https://lists.sr.ht/~emersion/grim-dev
+[#emersion on Libera Chat]: ircs://irc.libera.chat/#emersion
