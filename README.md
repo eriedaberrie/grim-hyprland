@@ -1,6 +1,6 @@
 # grim
 
-Grab images from a Wayland compositor. Works great with [slurp] and with [sway].
+Grab images from a Wayland compositor. Works great with [slurp].
 
 ## Example usage
 
