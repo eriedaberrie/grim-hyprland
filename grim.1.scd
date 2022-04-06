@@ -60,4 +60,4 @@ output instead.
 
 Maintained by Simon Ser <contact@emersion.fr>, who is assisted by other
 open-source contributors. For more information about grim development, see
-https://github.com/emersion/grim.
+<https://sr.ht/~emersion/grim>.
