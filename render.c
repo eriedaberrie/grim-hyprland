@@ -131,9 +131,15 @@ static void compute_composite_region(const struct pixman_f_transform *out2com,
 
 pixman_image_t *render(struct grim_state *state, struct grim_box *geometry,
 		double scale) {
+	int common_width = geometry->width * scale;
+	int common_height = geometry->height * scale;
 	pixman_image_t *common_image = pixman_image_create_bits(PIXMAN_a8r8g8b8,
-		geometry->width * scale, geometry->height * scale,
-		NULL, 0);
+		common_width, common_height, NULL, 0);
+	if (!common_image) {
+		fprintf(stderr, "failed to create image with size: %d x %d\n",
+			common_width, common_height);
+		return NULL;
+	}
 
 	struct grim_output *output;
 	wl_list_for_each(output, &state->outputs, link) {
