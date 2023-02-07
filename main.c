@@ -513,7 +513,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (geometry == NULL) {
-			fprintf(stderr, "unknown output '%s'", geometry_output);
+			fprintf(stderr, "unknown output '%s'\n", geometry_output);
 			return EXIT_FAILURE;
 		}
 	}
