@@ -449,6 +449,9 @@ int main(int argc, char *argv[]) {
 		output_filepath = malloc(len + 1);
 		snprintf(output_filepath, len + 1, "%s/%s", output_dir, output_filename);
 		free(output_dir);
+	} else if (optind < argc - 1) {
+		printf("%s", usage);
+		return EXIT_FAILURE;
 	} else {
 		output_filename = argv[optind];
 		output_filepath = strdup(output_filename);
