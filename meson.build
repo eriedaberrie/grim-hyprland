@@ -21,12 +21,11 @@ realtime = cc.find_library('rt')
 wayland_client = dependency('wayland-client')
 wayland_protos = dependency('wayland-protocols', version: '>=1.14')
 
-if jpeg.found()
-	add_project_arguments('-DHAVE_JPEG', language: 'c')
-endif
-
 is_le = host_machine.endian() == 'little'
-add_project_arguments('-DGRIM_LITTLE_ENDIAN=@0@'.format(is_le.to_int()), language: 'c')
+add_project_arguments([
+	'-DGRIM_LITTLE_ENDIAN=@0@'.format(is_le.to_int()),
+	'-DHAVE_JPEG=@0@'.format(jpeg.found().to_int()),
+], language: 'c')
 
 subdir('contrib/completions')
 subdir('protocol')

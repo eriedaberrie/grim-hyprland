@@ -16,7 +16,7 @@
 #include "output-layout.h"
 #include "render.h"
 #include "write_ppm.h"
-#ifdef HAVE_JPEG
+#if HAVE_JPEG
 #include "write_jpg.h"
 #endif
 #include "write_png.h"
@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
 			} else if (strcmp(optarg, "ppm") == 0) {
 				output_filetype = GRIM_FILETYPE_PPM;
 			} else if (strcmp(optarg, "jpeg") == 0) {
-#ifdef HAVE_JPEG
+#if HAVE_JPEG
 				output_filetype = GRIM_FILETYPE_JPEG;
 #else
 				fprintf(stderr, "jpeg support disabled\n");
