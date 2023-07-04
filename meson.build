@@ -9,8 +9,6 @@ project(
 
 add_project_arguments('-Wno-unused-parameter', language: 'c')
 
-grim_inc = include_directories('include')
-
 cc = meson.get_compiler('c')
 
 png = dependency('libpng')
@@ -58,7 +56,7 @@ executable(
 	'grim',
 	files(grim_files),
 	dependencies: grim_deps,
-	include_directories: [grim_inc],
+	include_directories: 'include',
 	install: true,
 )
 
