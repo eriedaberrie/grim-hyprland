@@ -85,3 +85,8 @@ if scdoc.found()
 		)
 	endforeach
 endif
+
+summary({
+	'JPEG': jpeg.found(),
+	'Manual pages': scdoc.found(),
+}, bool_yn: true)
