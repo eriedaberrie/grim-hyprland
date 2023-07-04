@@ -11,6 +11,7 @@ cc = meson.get_compiler('c')
 
 add_project_arguments(cc.get_supported_arguments([
 	'-Wno-unused-parameter',
+	'-Wundef',
 ]), language: 'c')
 
 png = dependency('libpng')
