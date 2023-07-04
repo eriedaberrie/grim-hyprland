@@ -7,9 +7,11 @@ project(
 	default_options: ['c_std=c11', 'warning_level=3', 'werror=true'],
 )
 
-add_project_arguments('-Wno-unused-parameter', language: 'c')
-
 cc = meson.get_compiler('c')
+
+add_project_arguments(cc.get_supported_arguments([
+	'-Wno-unused-parameter',
+]), language: 'c')
 
 png = dependency('libpng')
 jpeg = dependency('libjpeg', required: get_option('jpeg'))
