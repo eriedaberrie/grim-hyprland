@@ -1,8 +1,18 @@
-# grim
+# grim-hyprland
 
-Grab images from a Wayland compositor. Works great with [slurp].
+A fork of Grim that takes advantage of Hyprland's custom protocols to grab
+specific windows.
 
 ## Example usage
+
+Grab a screenshot from the focused window under Hyprland, using `hyprctl` and
+`jq`:
+
+```sh
+grim -w "$(hyprctl activewindow -j | jq -r '.address')"
+```
+
+All original usages of Grim still work:
 
 Screenshoot all outputs:
 
@@ -40,18 +50,11 @@ Screenshoot and copy to clipboard:
 grim - | wl-copy
 ```
 
-Grab a screenshot from the focused monitor under Sway, using `swaymsg` and
+Grab a screenshot from the focused monitor under Hyprland, using `hyprctl` and
 `jq`:
 
 ```sh
-grim -o $(swaymsg -t get_outputs | jq -r '.[] | select(.focused) | .name')
-```
-
-Grab a screenshot from the focused window under Sway, using `swaymsg` and
-`jq`:
-
-```sh
-grim -g "$(swaymsg -t get_tree | jq -j '.. | select(.type?) | select(.focused).rect | "\(.x),\(.y) \(.width)x\(.height)"')"
+grim -o "$(hyprctl monitors -j | jq -r '.[] | select(.focused) | .name')"
 ```
 
 Pick a color, using ImageMagick:

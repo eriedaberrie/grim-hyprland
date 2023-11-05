@@ -2,7 +2,7 @@ grim(1)
 
 # NAME
 
-grim - grab images from a Wayland compositor
+grim-hyprland - grab images from a Wayland compositor
 
 # SYNOPSIS
 
@@ -13,6 +13,8 @@ grim - grab images from a Wayland compositor
 grim is a command-line utility to take screenshots of Wayland desktops. For now
 it requires support for the screencopy protocol to work. Support for the
 xdg-output protocol is optional, but improves fractional scaling support.
+Window-specific screenshots require support for Hyprland's toplevel export
+protocol.
 
 grim will write an image to _output-file_, or to a timestamped file name in
 *$GRIM_DEFAULT_DIR* if not specified. If *$GRIM_DEFAULT_DIR* is not set, it
@@ -24,6 +26,10 @@ output instead.
 
 *-h*
 	Show help message and quit.
+
+*-w* <address>
+	Set the window to capture. Incompatible with '-g' and '-o'. Requires
+	compositor to implement *hyprland-toplevel-export-v1*.
 
 *-s* <factor>
 	Set the output image's scale factor to _factor_. By default, the scale

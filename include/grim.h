@@ -6,6 +6,7 @@
 #include "box.h"
 #include "wlr-screencopy-unstable-v1-client-protocol.h"
 #include "xdg-output-unstable-v1-client-protocol.h"
+#include "hyprland-toplevel-export-v1-client-protocol.h"
 
 enum grim_filetype {
 	GRIM_FILETYPE_PNG,
@@ -18,8 +19,14 @@ struct grim_state {
 	struct wl_registry *registry;
 	struct wl_shm *shm;
 	struct zxdg_output_manager_v1 *xdg_output_manager;
-	struct zwlr_screencopy_manager_v1 *screencopy_manager;
 	struct wl_list outputs;
+
+	bool use_win;
+
+	union {
+		struct zwlr_screencopy_manager_v1 *screencopy_manager;
+		struct hyprland_toplevel_export_manager_v1 *toplevel_export_manager;
+	};
 
 	size_t n_done;
 };
@@ -41,8 +48,17 @@ struct grim_output {
 	char *name;
 
 	struct grim_buffer *buffer;
-	struct zwlr_screencopy_frame_v1 *screencopy_frame;
-	uint32_t screencopy_frame_flags; // enum zwlr_screencopy_frame_v1_flags
+
+	union {
+		struct zwlr_screencopy_frame_v1 *screencopy_frame;
+		struct hyprland_toplevel_export_frame_v1 *toplevel_export_frame;
+	};
+
+	union {
+		uint32_t screencopy_frame_flags; // enum zwlr_screencopy_frame_v1_flags
+		uint32_t toplevel_export_frame_flags; // enum hyprland_toplevel_export_frame_v1_flags
+	};
+
 };
 
 #endif

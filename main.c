@@ -21,6 +21,72 @@
 #endif
 #include "write_png.h"
 
+static void toplevel_export_frame_handle_buffer(void *data,
+		struct hyprland_toplevel_export_frame_v1 *frame, uint32_t format, uint32_t width,
+		uint32_t height, uint32_t stride) {
+	struct grim_output *output = data;
+
+	output->buffer =
+		create_buffer(output->state->shm, format, width, height, stride);
+	if (output->buffer == NULL) {
+		fprintf(stderr, "failed to create buffer\n");
+		exit(EXIT_FAILURE);
+	}
+
+	output->geometry.width = width;
+	output->geometry.height = height;
+
+	guess_output_logical_geometry(output);
+}
+
+static void toplevel_export_frame_handle_damage(void *data,
+		struct hyprland_toplevel_export_frame_v1 *frame, uint32_t x, uint32_t y,
+		uint32_t width, uint32_t height) {
+	// No-op
+}
+
+static void toplevel_export_frame_handle_flags(void *data,
+		struct hyprland_toplevel_export_frame_v1 *frame, uint32_t flags) {
+	struct grim_output *output = data;
+	output->toplevel_export_frame_flags = flags;
+}
+
+static void toplevel_export_frame_handle_ready(void *data,
+		struct hyprland_toplevel_export_frame_v1 *frame, uint32_t tv_sec_hi,
+		uint32_t tv_sec_lo, uint32_t tv_nsec) {
+	struct grim_output *output = data;
+	++output->state->n_done;
+}
+
+static void toplevel_export_frame_handle_failed(void *data,
+		struct hyprland_toplevel_export_frame_v1 *frame) {
+	fprintf(stderr, "failed to copy window\n");
+	exit(EXIT_FAILURE);
+}
+
+static void toplevel_export_frame_handle_linux_dmabuf(void *data,
+		struct hyprland_toplevel_export_frame_v1 *frame, uint32_t format,
+		uint32_t width, uint32_t height) {
+	// No-op
+}
+
+static void toplevel_export_frame_handle_buffer_done(void *data,
+		struct hyprland_toplevel_export_frame_v1 *frame) {
+	struct grim_output *output = data;
+	hyprland_toplevel_export_frame_v1_copy(frame, output->buffer->wl_buffer, 1);
+}
+
+static const struct hyprland_toplevel_export_frame_v1_listener toplevel_export_frame_listener = {
+	.buffer = toplevel_export_frame_handle_buffer,
+	.damage = toplevel_export_frame_handle_damage,
+	.flags = toplevel_export_frame_handle_flags,
+	.ready = toplevel_export_frame_handle_ready,
+	.failed = toplevel_export_frame_handle_failed,
+	.linux_dmabuf = toplevel_export_frame_handle_linux_dmabuf,
+	.buffer_done = toplevel_export_frame_handle_buffer_done,
+};
+
+
 static void screencopy_frame_handle_buffer(void *data,
 		struct zwlr_screencopy_frame_v1 *frame, uint32_t format, uint32_t width,
 		uint32_t height, uint32_t stride) {
@@ -156,6 +222,11 @@ static void handle_global(void *data, struct wl_registry *registry,
 
 	if (strcmp(interface, wl_shm_interface.name) == 0) {
 		state->shm = wl_registry_bind(registry, name, &wl_shm_interface, 1);
+	} else if (state->use_win) {
+		if (strcmp(interface, hyprland_toplevel_export_manager_v1_interface.name) == 0) {
+			state->toplevel_export_manager = wl_registry_bind(registry, name,
+				&hyprland_toplevel_export_manager_v1_interface, 2);
+		}
 	} else if (strcmp(interface, zxdg_output_manager_v1_interface.name) == 0) {
 		uint32_t bind_version = (version > 2) ? 2 : version;
 		state->xdg_output_manager = wl_registry_bind(registry, name,
@@ -310,6 +381,7 @@ static const char usage[] =
 	"Usage: grim [options...] [output-file]\n"
 	"\n"
 	"  -h              Show help message and quit.\n"
+	"  -w <address>    Set individual window to screenshot. (Hyprland only).\n"
 	"  -s <factor>     Set the output image scale factor. Defaults to the\n"
 	"                  greatest output scale factor.\n"
 	"  -g <geometry>   Set the region to capture.\n"
@@ -320,6 +392,8 @@ static const char usage[] =
 	"  -c              Include cursors in the screenshot.\n";
 
 int main(int argc, char *argv[]) {
+	bool use_win = false;
+	int win_handle = 0;
 	double scale = 1.0;
 	bool use_greatest_scale = true;
 	struct grim_box *geometry = NULL;
@@ -329,11 +403,21 @@ int main(int argc, char *argv[]) {
 	int png_level = 6; // current default png/zlib compression level
 	bool with_cursor = false;
 	int opt;
-	while ((opt = getopt(argc, argv, "hs:g:t:q:l:o:c")) != -1) {
+	while ((opt = getopt(argc, argv, "hw:s:g:t:q:l:o:c")) != -1) {
 		switch (opt) {
 		case 'h':
 			printf("%s", usage);
 			return EXIT_SUCCESS;
+		case 'w':;
+			char *endptr = NULL;
+			errno = 0;
+		    win_handle = strtol(optarg, &endptr, 16);
+			if (*endptr != '\0' || errno) {
+				fprintf(stderr, "expected hex window address\n");
+				return EXIT_FAILURE;
+			}
+			use_win = true;
+			break;
 		case 's':
 			use_greatest_scale = false;
 			scale = strtod(optarg, NULL);
@@ -430,6 +514,11 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	if (use_win && (geometry || geometry_output)) {
+		fprintf(stderr, "-w is incompatible with -g and -o\n");
+		return EXIT_FAILURE;
+	}
+
 	const char *output_filename;
 	char *output_filepath;
 	char tmp[64];
@@ -458,6 +547,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	struct grim_state state = {0};
+	state.use_win = use_win;
 	wl_list_init(&state.outputs);
 
 	state.display = wl_display_connect(NULL);
@@ -474,70 +564,93 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "compositor doesn't support wl_shm\n");
 		return EXIT_FAILURE;
 	}
-	if (wl_list_empty(&state.outputs)) {
-		fprintf(stderr, "no wl_output\n");
-		return EXIT_FAILURE;
-	}
 
-	if (state.xdg_output_manager != NULL) {
-		struct grim_output *output;
-		wl_list_for_each(output, &state.outputs, link) {
-			output->xdg_output = zxdg_output_manager_v1_get_xdg_output(
-				state.xdg_output_manager, output->wl_output);
-			zxdg_output_v1_add_listener(output->xdg_output,
-				&xdg_output_listener, output);
+	size_t n_pending = 0;
+	if (use_win) {
+		if (state.toplevel_export_manager == NULL) {
+			fprintf(stderr, "compositor doesn't support hyprland_toplevel_export_manager\n");
+			return EXIT_FAILURE;
 		}
 
-		wl_display_roundtrip(state.display);
+		struct grim_output *output = calloc(1, sizeof(struct grim_output));
+		output->state = &state;
+		output->scale = 1;
+		output->transform = WL_OUTPUT_TRANSFORM_NORMAL;
+		wl_list_insert(&state.outputs, &output->link);
+
+		output->toplevel_export_frame =
+			hyprland_toplevel_export_manager_v1_capture_toplevel(
+				state.toplevel_export_manager, with_cursor, win_handle);
+
+		hyprland_toplevel_export_frame_v1_add_listener(
+			output->toplevel_export_frame, &toplevel_export_frame_listener, output);
+
+		n_pending = 1;
 	} else {
-		fprintf(stderr, "warning: zxdg_output_manager_v1 isn't available, "
-			"guessing the output layout\n");
-
-		struct grim_output *output;
-		wl_list_for_each(output, &state.outputs, link) {
-			guess_output_logical_geometry(output);
+		if (wl_list_empty(&state.outputs)) {
+			fprintf(stderr, "no wl_output\n");
+			return EXIT_FAILURE;
 		}
-	}
 
-	if (state.screencopy_manager == NULL) {
-		fprintf(stderr, "compositor doesn't support wlr-screencopy-unstable-v1\n");
-		return EXIT_FAILURE;
-	}
+		if (state.xdg_output_manager != NULL) {
+			struct grim_output *output;
+			wl_list_for_each(output, &state.outputs, link) {
+				output->xdg_output = zxdg_output_manager_v1_get_xdg_output(
+					state.xdg_output_manager, output->wl_output);
+				zxdg_output_v1_add_listener(output->xdg_output,
+					&xdg_output_listener, output);
+			}
 
-	if (geometry_output != NULL) {
-		struct grim_output *output;
-		wl_list_for_each(output, &state.outputs, link) {
-			if (output->name != NULL &&
-					strcmp(output->name, geometry_output) == 0) {
-				geometry = calloc(1, sizeof(struct grim_box));
-				memcpy(geometry, &output->logical_geometry,
-					sizeof(struct grim_box));
+			wl_display_roundtrip(state.display);
+		} else {
+			fprintf(stderr, "warning: zxdg_output_manager_v1 isn't available, "
+				"guessing the output layout\n");
+
+			struct grim_output *output;
+			wl_list_for_each(output, &state.outputs, link) {
+				guess_output_logical_geometry(output);
 			}
 		}
 
-		if (geometry == NULL) {
-			fprintf(stderr, "unknown output '%s'\n", geometry_output);
+		if (state.screencopy_manager == NULL) {
+			fprintf(stderr, "compositor doesn't support wlr-screencopy-unstable-v1\n");
 			return EXIT_FAILURE;
 		}
-	}
 
-	size_t n_pending = 0;
-	struct grim_output *output;
-	wl_list_for_each(output, &state.outputs, link) {
-		if (geometry != NULL &&
-				!intersect_box(geometry, &output->logical_geometry)) {
-			continue;
+		if (geometry_output != NULL) {
+			struct grim_output *output;
+			wl_list_for_each(output, &state.outputs, link) {
+				if (output->name != NULL &&
+						strcmp(output->name, geometry_output) == 0) {
+					geometry = calloc(1, sizeof(struct grim_box));
+					memcpy(geometry, &output->logical_geometry,
+						sizeof(struct grim_box));
+				}
+			}
+
+			if (geometry == NULL) {
+				fprintf(stderr, "unknown output '%s'\n", geometry_output);
+				return EXIT_FAILURE;
+			}
 		}
-		if (use_greatest_scale && output->logical_scale > scale) {
-			scale = output->logical_scale;
+
+		struct grim_output* output;
+		wl_list_for_each(output, &state.outputs, link) {
+			if (geometry != NULL &&
+					!intersect_box(geometry, &output->logical_geometry)) {
+				continue;
+			}
+			if (use_greatest_scale && output->logical_scale > scale) {
+				scale = output->logical_scale;
+			}
+
+			output->screencopy_frame = zwlr_screencopy_manager_v1_capture_output(
+				state.screencopy_manager, with_cursor, output->wl_output);
+			zwlr_screencopy_frame_v1_add_listener(output->screencopy_frame,
+				&screencopy_frame_listener, output);
+
+			++n_pending;
 		}
-
-		output->screencopy_frame = zwlr_screencopy_manager_v1_capture_output(
-			state.screencopy_manager, with_cursor, output->wl_output);
-		zwlr_screencopy_frame_v1_add_listener(output->screencopy_frame,
-			&screencopy_frame_listener, output);
-
-		++n_pending;
 	}
 
 	if (n_pending == 0) {
@@ -604,6 +717,7 @@ int main(int argc, char *argv[]) {
 	free(output_filepath);
 	pixman_image_unref(image);
 
+	struct grim_output *output;
 	struct grim_output *output_tmp;
 	wl_list_for_each_safe(output, output_tmp, &state.outputs, link) {
 		wl_list_remove(&output->link);
@@ -615,10 +729,16 @@ int main(int argc, char *argv[]) {
 		if (output->xdg_output != NULL) {
 			zxdg_output_v1_destroy(output->xdg_output);
 		}
-		wl_output_release(output->wl_output);
+		if (output->wl_output != NULL) {
+			wl_output_release(output->wl_output);
+		}
 		free(output);
 	}
-	zwlr_screencopy_manager_v1_destroy(state.screencopy_manager);
+	if (use_win) {
+		hyprland_toplevel_export_manager_v1_destroy(state.toplevel_export_manager);
+	} else {
+		zwlr_screencopy_manager_v1_destroy(state.screencopy_manager);
+	}
 	if (state.xdg_output_manager != NULL) {
 		zxdg_output_manager_v1_destroy(state.xdg_output_manager);
 	}

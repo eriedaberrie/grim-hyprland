@@ -167,7 +167,10 @@ pixman_image_t *render(struct grim_state *state, struct grim_box *geometry,
 
 		int output_flipped_x = get_output_flipped(output->transform);
 		int output_flipped_y = output->screencopy_frame_flags &
-			ZWLR_SCREENCOPY_FRAME_V1_FLAGS_Y_INVERT ? -1 : 1;
+			(state->use_win
+				? HYPRLAND_TOPLEVEL_EXPORT_FRAME_V1_FLAGS_Y_INVERT
+				: ZWLR_SCREENCOPY_FRAME_V1_FLAGS_Y_INVERT)
+			? -1 : 1;
 
 		pixman_image_t *output_image = pixman_image_create_bits(
 			pixman_fmt, buffer->width, buffer->height,
