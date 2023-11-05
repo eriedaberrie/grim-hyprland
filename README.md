@@ -1,6 +1,6 @@
 # grim-hyprland
 
-A fork of Grim that takes advantage of Hyprland's custom protocols to grab
+A fork of [grim] that takes advantage of [Hyprland]'s custom protocols to grab
 specific windows.
 
 ## Example usage
@@ -85,6 +85,10 @@ installation (in `/usr/local` by default), run `ninja -C build install`.
 
 ## Contributing
 
+This fork is on GitHub, you know what to do.
+
+### Upstream contributions
+
 Report bugs on the [issue tracker], send patches on the [mailing list].
 
 Join the IRC channel: [#emersion on Libera Chat].
@@ -93,6 +97,8 @@ Join the IRC channel: [#emersion on Libera Chat].
 
 MIT
 
+[grim]: https://git.sr.ht/~emersion/grim
+[Hyprland]: https://github.com/hyprwm/Hyprland
 [slurp]: https://github.com/emersion/slurp
 [issue tracker]: https://todo.sr.ht/~emersion/grim
 [mailing list]: https://lists.sr.ht/~emersion/grim-dev
