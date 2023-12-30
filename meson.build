@@ -42,7 +42,6 @@ grim_files = [
 ]
 
 grim_deps = [
-	client_protos,
 	math,
 	pixman,
 	png,
@@ -57,7 +56,7 @@ endif
 
 executable(
 	'grim',
-	files(grim_files),
+	[files(grim_files), protocols_src],
 	dependencies: grim_deps,
 	include_directories: 'include',
 	install: true,
