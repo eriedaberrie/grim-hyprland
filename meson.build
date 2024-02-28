@@ -24,6 +24,7 @@ wayland_protos = dependency('wayland-protocols', version: '>=1.14')
 
 is_le = host_machine.endian() == 'little'
 add_project_arguments([
+	'-D_POSIX_C_SOURCE=200809L',
 	'-DGRIM_LITTLE_ENDIAN=@0@'.format(is_le.to_int()),
 	'-DHAVE_JPEG=@0@'.format(jpeg.found().to_int()),
 ], language: 'c')
