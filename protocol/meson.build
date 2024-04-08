@@ -13,7 +13,7 @@ wayland_scanner_code = generator(
 
 wayland_scanner_client = generator(
 	wayland_scanner_prog,
-	output: '@BASENAME@-client-protocol.h',
+	output: '@BASENAME@-protocol.h',
 	arguments: ['client-header', '@INPUT@', '@OUTPUT@'],
 )
 

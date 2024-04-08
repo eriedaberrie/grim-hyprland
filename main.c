@@ -20,8 +20,8 @@
 #endif
 #include "write_png.h"
 
-#include "wlr-screencopy-unstable-v1-client-protocol.h"
-#include "xdg-output-unstable-v1-client-protocol.h"
+#include "wlr-screencopy-unstable-v1-protocol.h"
+#include "xdg-output-unstable-v1-protocol.h"
 
 static void screencopy_frame_handle_buffer(void *data,
 		struct zwlr_screencopy_frame_v1 *frame, uint32_t format, uint32_t width,
