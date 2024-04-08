@@ -479,6 +479,10 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "compositor doesn't support wl_shm\n");
 		return EXIT_FAILURE;
 	}
+	if (state.screencopy_manager == NULL) {
+		fprintf(stderr, "compositor doesn't support wlr-screencopy-unstable-v1\n");
+		return EXIT_FAILURE;
+	}
 	if (wl_list_empty(&state.outputs)) {
 		fprintf(stderr, "no wl_output\n");
 		return EXIT_FAILURE;
@@ -505,11 +509,6 @@ int main(int argc, char *argv[]) {
 		wl_list_for_each(output, &state.outputs, link) {
 			guess_output_logical_geometry(output);
 		}
-	}
-
-	if (state.screencopy_manager == NULL) {
-		fprintf(stderr, "compositor doesn't support wlr-screencopy-unstable-v1\n");
-		return EXIT_FAILURE;
 	}
 
 	if (geometry_output != NULL) {
