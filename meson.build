@@ -20,7 +20,6 @@ math = cc.find_library('m')
 pixman = dependency('pixman-1')
 realtime = cc.find_library('rt')
 wayland_client = dependency('wayland-client')
-wayland_protos = dependency('wayland-protocols', version: '>=1.14')
 
 is_le = host_machine.endian() == 'little'
 add_project_arguments([
