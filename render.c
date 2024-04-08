@@ -9,6 +9,8 @@
 #include "output-layout.h"
 #include "render.h"
 
+#include "wlr-screencopy-unstable-v1-client-protocol.h"
+
 static pixman_format_code_t get_pixman_format(enum wl_shm_format wl_fmt) {
 	switch (wl_fmt) {
 #if GRIM_LITTLE_ENDIAN

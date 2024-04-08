@@ -4,8 +4,6 @@
 #include <wayland-client.h>
 
 #include "box.h"
-#include "wlr-screencopy-unstable-v1-client-protocol.h"
-#include "xdg-output-unstable-v1-client-protocol.h"
 
 enum grim_filetype {
 	GRIM_FILETYPE_PNG,
