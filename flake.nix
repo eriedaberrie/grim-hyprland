@@ -8,11 +8,11 @@
     nixpkgs,
   }: let
     inherit (nixpkgs) lib;
-    genSystems = lib.genAttrs [
-      "x86_64-linux"
-      "aarch64-linux"
-    ];
-    pkgsFor = system: import nixpkgs {inherit system;};
+    forSystems = f:
+      lib.genAttrs [
+        "x86_64-linux"
+        "aarch64-linux"
+      ] (system: f nixpkgs.legacyPackages.${system});
   in {
     overlays = {
       default = _: prev: rec {
@@ -27,10 +27,11 @@
       };
     };
 
-    packages = genSystems (system:
-      (self.overlays.default null (pkgsFor system))
-      // {default = self.packages.${system}.grim;});
+    packages = forSystems (pkgs: {
+      inherit (pkgs.extend self.overlays.default) grim grim-hyprland;
+      default = self.packages.${pkgs.system}.grim;
+    });
 
-    formatter = genSystems (system: (pkgsFor system).alejandra);
+    formatter = forSystems (pkgs: pkgs.alejandra);
   };
 }
