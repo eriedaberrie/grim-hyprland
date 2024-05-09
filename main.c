@@ -1,4 +1,3 @@
-#define _POSIX_C_SOURCE 200809L
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
@@ -20,6 +19,10 @@
 #include "write_jpg.h"
 #endif
 #include "write_png.h"
+
+#include "wlr-screencopy-unstable-v1-protocol.h"
+#include "xdg-output-unstable-v1-protocol.h"
+#include "hyprland-toplevel-export-v1-protocol.h"
 
 static void toplevel_export_frame_handle_buffer(void *data,
 		struct hyprland_toplevel_export_frame_v1 *frame, uint32_t format, uint32_t width,
@@ -85,7 +88,6 @@ static const struct hyprland_toplevel_export_frame_v1_listener toplevel_export_f
 	.linux_dmabuf = toplevel_export_frame_handle_linux_dmabuf,
 	.buffer_done = toplevel_export_frame_handle_buffer_done,
 };
-
 
 static void screencopy_frame_handle_buffer(void *data,
 		struct zwlr_screencopy_frame_v1 *frame, uint32_t format, uint32_t width,
@@ -558,10 +560,17 @@ int main(int argc, char *argv[]) {
 
 	state.registry = wl_display_get_registry(state.display);
 	wl_registry_add_listener(state.registry, &registry_listener, &state);
-	wl_display_roundtrip(state.display);
+	if (wl_display_roundtrip(state.display) < 0) {
+		fprintf(stderr, "wl_display_roundtrip() failed\n");
+		return EXIT_FAILURE;
+	}
 
 	if (state.shm == NULL) {
 		fprintf(stderr, "compositor doesn't support wl_shm\n");
+		return EXIT_FAILURE;
+	}
+	if (state.screencopy_manager == NULL) {
+		fprintf(stderr, "compositor doesn't support wlr-screencopy-unstable-v1\n");
 		return EXIT_FAILURE;
 	}
 
@@ -601,7 +610,10 @@ int main(int argc, char *argv[]) {
 					&xdg_output_listener, output);
 			}
 
-			wl_display_roundtrip(state.display);
+			if (wl_display_roundtrip(state.display) < 0) {
+				fprintf(stderr, "wl_display_roundtrip() failed\n");
+				return EXIT_FAILURE;
+			}
 		} else {
 			fprintf(stderr, "warning: zxdg_output_manager_v1 isn't available, "
 				"guessing the output layout\n");
@@ -610,11 +622,6 @@ int main(int argc, char *argv[]) {
 			wl_list_for_each(output, &state.outputs, link) {
 				guess_output_logical_geometry(output);
 			}
-		}
-
-		if (state.screencopy_manager == NULL) {
-			fprintf(stderr, "compositor doesn't support wlr-screencopy-unstable-v1\n");
-			return EXIT_FAILURE;
 		}
 
 		if (geometry_output != NULL) {

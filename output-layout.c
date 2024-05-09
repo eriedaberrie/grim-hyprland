@@ -1,9 +1,12 @@
-#define _XOPEN_SOURCE 500
 #include <limits.h>
 #include <math.h>
 
 #include "output-layout.h"
 #include "grim.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 void get_output_layout_extents(struct grim_state *state, struct grim_box *box) {
 	int32_t x1 = INT_MAX, y1 = INT_MAX;

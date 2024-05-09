@@ -20,10 +20,10 @@ math = cc.find_library('m')
 pixman = dependency('pixman-1')
 realtime = cc.find_library('rt')
 wayland_client = dependency('wayland-client')
-wayland_protos = dependency('wayland-protocols', version: '>=1.14')
 
 is_le = host_machine.endian() == 'little'
 add_project_arguments([
+	'-D_POSIX_C_SOURCE=200809L',
 	'-DGRIM_LITTLE_ENDIAN=@0@'.format(is_le.to_int()),
 	'-DHAVE_JPEG=@0@'.format(jpeg.found().to_int()),
 ], language: 'c')
@@ -42,7 +42,6 @@ grim_files = [
 ]
 
 grim_deps = [
-	client_protos,
 	math,
 	pixman,
 	png,
@@ -57,7 +56,7 @@ endif
 
 executable(
 	'grim',
-	files(grim_files),
+	[files(grim_files), protocols_src],
 	dependencies: grim_deps,
 	include_directories: 'include',
 	install: true,
