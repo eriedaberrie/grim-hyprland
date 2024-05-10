@@ -30,7 +30,7 @@
     };
 
     packages = forSystems (pkgs: {
-      inherit (pkgs.extend self.overlays.default) grim grim-hyprland;
+      inherit (self.overlays.default pkgs pkgs) grim grim-hyprland;
       default = self.packages.${pkgs.system}.grim;
     });
 
