@@ -23,6 +23,8 @@
           version = self.rev or "dirty";
           src = lib.cleanSource ./.;
           patches = [];
+          buildInputs =
+            old.buildInputs ++ [prev.wayland-scanner];
         });
 
         grim-hyprland = grim;
