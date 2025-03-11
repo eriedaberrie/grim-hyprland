@@ -33,7 +33,14 @@
 
     packages = forSystems (pkgs: {
       inherit (self.overlays.default pkgs pkgs) grim grim-hyprland;
-      default = self.packages.${pkgs.system}.grim;
+      default = self.packages.${pkgs.stdenv.system}.grim;
+    });
+
+    devShells = forSystems (pkgs: {
+      default = pkgs.mkShell {
+        inputsFrom = [self.packages.${pkgs.stdenv.system}.grim];
+        packages = [pkgs.clang-tools];
+      };
     });
 
     formatter = forSystems (pkgs: pkgs.alejandra);
