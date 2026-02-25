@@ -29,6 +29,17 @@ static void toplevel_export_frame_handle_buffer(void *data,
 		uint32_t height, uint32_t stride) {
 	struct grim_output *output = data;
 
+	// Just take the first format (currently Hyprland only sends one anyways
+	// but this is slightly more spec-compliant I think)
+	if (output->buffer) {
+		return;
+	}
+
+	// HACK: unswap the format???
+	if (format == WL_SHM_FORMAT_XBGR2101010) {
+		format = WL_SHM_FORMAT_XRGB2101010;
+	}
+
 	output->buffer =
 		create_buffer(output->state->shm, format, width, height, stride);
 	if (output->buffer == NULL) {
